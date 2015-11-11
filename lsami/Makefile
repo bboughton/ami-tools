@@ -9,4 +9,8 @@ clean:
 	@go clean
 	@rm -rf build
 
+install: build
+	@cp build/$(NAME) $(GOPATH)/bin/$(NAME)
+
+
 .PHONY: build clean
