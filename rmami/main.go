@@ -6,7 +6,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/bboughton/ami-tools/rmami/ami"
+	"github.com/bboughton/ami-tools/ami"
 	"github.com/bboughton/ami-tools/rmami/log"
 )
 
