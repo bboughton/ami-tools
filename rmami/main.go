@@ -7,7 +7,7 @@ import (
 	"regexp"
 
 	"github.com/bboughton/ami-tools/ami"
-	"github.com/bboughton/ami-tools/rmami/log"
+	"github.com/bboughton/ami-tools/log"
 )
 
 var (

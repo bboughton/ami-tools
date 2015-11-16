@@ -3,7 +3,7 @@ package ami
 import (
 	"fmt"
 
-	"github.com/bboughton/ami-tools/rmami/log"
+	"github.com/bboughton/ami-tools/log"
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/ec2"
 )
