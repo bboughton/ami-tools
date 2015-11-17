@@ -18,8 +18,28 @@ func (imgs *Images) Add(img Image) {
 }
 
 func newImageFromEc2Image(img *ec2.Image) Image {
+	createdAt, err := time.Parse(time.RFC3339, *img.CreationDate)
+	if err != nil {
+		createdAt = time.Now()
+	}
+
 	return Image{
 		Id:        *img.ImageId,
-		CreatedAt: time.Now(),
+		CreatedAt: createdAt,
 	}
+}
+
+// byCreatedAt should be used to sort Images collection by CreatedAt
+type byCreatedAt []Image
+
+func (img byCreatedAt) Len() int {
+	return len(img)
+}
+
+func (img byCreatedAt) Swap(i, j int) {
+	img[i], img[j] = img[j], img[i]
+}
+
+func (img byCreatedAt) Less(i, j int) bool {
+	return img[i].CreatedAt.After(img[j].CreatedAt)
 }

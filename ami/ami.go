@@ -3,6 +3,7 @@ package ami
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -113,11 +114,19 @@ func (srv *Service) Find(filter FindFilter) Images {
 	for _, img := range resp.Images {
 		images.Add(newImageFromEc2Image(img))
 	}
+
+	if filter.Latest {
+		srv.log.Debug("filtering out all but latest")
+		sort.Sort(byCreatedAt(images))
+		images = images[:1]
+	}
+
 	return images
 }
 
 type FindFilter struct {
 	CreatedBy string
+	Latest    bool
 }
 
 func (f FindFilter) ec2filter() []*ec2.Filter {
