@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/ec2"
+	"github.com/bboughton/ami-tools/ami"
+	"github.com/bboughton/ami-tools/log"
 )
 
 var (
@@ -22,27 +22,12 @@ func main() {
 	flag.StringVar(&usr, "created-by", "", "filter for images by the user that created them")
 	flag.Parse()
 
-	for _, image := range getImages(usr) {
+	logger := log.NewLogger(false)
+	client := ami.NewService(false, logger)
+	filter := ami.FindFilter{
+		CreatedBy: usr,
+	}
+	for _, image := range client.Find(filter) {
 		fmt.Println(image.Id)
 	}
-}
-
-func getImages(user string) []ec2.Image {
-	auth, err := aws.EnvAuth()
-	if err != nil {
-		return nil
-	}
-	client := ec2.New(auth, aws.USWest2)
-
-	filters := ec2.NewFilter()
-	if user != "" {
-		filters.Add("tag:Created By", user)
-	}
-
-	resp, err := client.ImagesByOwners(nil, []string{"self"}, filters)
-	if err != nil {
-		return nil
-	}
-
-	return resp.Images
 }

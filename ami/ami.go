@@ -69,3 +69,28 @@ func (srv *Service) listSnapshots(ami string) []string {
 
 	return snapIds
 }
+
+func (srv *Service) Find(filter FindFilter) []ec2.Image {
+	resp, err := srv.ec2.ImagesByOwners(nil, []string{"self"}, filter.ec2filter())
+	if err != nil {
+		return nil
+	}
+
+	return resp.Images
+
+}
+
+type FindFilter struct {
+	CreatedBy string
+	Latest    bool
+}
+
+func (f FindFilter) ec2filter() *ec2.Filter {
+	ec2filter := ec2.NewFilter()
+
+	if f.CreatedBy != "" {
+		ec2filter.Add("tag:Created By", f.CreatedBy)
+	}
+
+	return ec2filter
+}
