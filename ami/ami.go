@@ -97,7 +97,7 @@ func (srv *Service) listSnapshots(ami string) []string {
 	return snapIds
 }
 
-func (srv *Service) Find(filter FindFilter) []*ec2.Image {
+func (srv *Service) Find(filter FindFilter) Images {
 	resp, err := srv.ec2.DescribeImages(&ec2.DescribeImagesInput{
 		Filters: filter.ec2filter(),
 		Owners: []*string{
@@ -109,8 +109,11 @@ func (srv *Service) Find(filter FindFilter) []*ec2.Image {
 		return nil
 	}
 
-	return resp.Images
-
+	images := Images{}
+	for _, img := range resp.Images {
+		images.Add(newImageFromEc2Image(img))
+	}
+	return images
 }
 
 type FindFilter struct {
