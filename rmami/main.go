@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
-	"regexp"
 
 	"github.com/bboughton/ami-tools/ami"
 	"github.com/bboughton/ami-tools/log"
@@ -32,11 +30,9 @@ func main() {
 	client := ami.NewService(dry, logger)
 	var errorOccured bool
 	for _, ami := range amis {
-		if valid(ami) {
-			client.Remove(ami)
-		} else {
-			errorOccured = true
-			logger.Info(fmt.Sprintf("%s: invalid ami id\n", ami))
+		err := client.Remove(ami)
+		if err != nil {
+			logger.Info(err.Error())
 		}
 	}
 
@@ -47,9 +43,4 @@ func main() {
 
 func getDebug() bool {
 	return os.Getenv("DEBUG") == "1"
-}
-
-func valid(ami string) bool {
-	validId := regexp.MustCompile(`^ami-[a-zA-Z0-9]+$`)
-	return validId.MatchString(ami)
 }

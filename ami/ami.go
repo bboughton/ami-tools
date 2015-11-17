@@ -1,11 +1,13 @@
 package ami
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/bboughton/ami-tools/log"
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/ec2"
 )
 
 type Service struct {
@@ -19,44 +21,69 @@ type Service struct {
 
 // NewService returns a new AMI Service
 func NewService(dry bool, logger log.Logger) *Service {
-	auth, err := aws.EnvAuth()
-	if err != nil {
-		return nil
-	}
+	sess := session.New(&aws.Config{Region: aws.String("us-west-2")})
 
 	return &Service{
-		ec2: ec2.New(auth, aws.USWest2),
+		ec2: ec2.New(sess),
 		dry: dry,
 		log: logger,
 	}
 }
 
 // Remove will detach the ami and delete all corrisponding snapshots
-func (srv *Service) Remove(ami string) {
+func (srv *Service) Remove(ami string) error {
 	srv.log.Debug("removing ami " + ami)
-	if !srv.dry {
-		_, err := srv.ec2.DeregisterImage(ami)
-		if err != nil {
-			return
-		}
+	_, err := srv.ec2.DeregisterImage(&ec2.DeregisterImageInput{
+		ImageId: aws.String(ami),
+		DryRun:  aws.Bool(srv.dry),
+	})
+	if err != nil {
+		return err
 	}
 
-	srv.deleteSnapshots(srv.listSnapshots(ami))
+	err = srv.deleteSnapshots(srv.listSnapshots(ami))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (srv *Service) deleteSnapshots(snapIds []string) {
-	srv.log.Debug(fmt.Sprint("removing snapshots ", snapIds))
-	if !srv.dry {
-		srv.ec2.DeleteSnapshots(snapIds)
+func (srv *Service) deleteSnapshots(snapIds []string) error {
+	var isError bool
+	for _, snapId := range snapIds {
+		srv.log.Debug(fmt.Sprint("removing snapshot ", snapId))
+		_, err := srv.ec2.DeleteSnapshot(&ec2.DeleteSnapshotInput{
+			SnapshotId: aws.String(snapId),
+			DryRun:     aws.Bool(srv.dry),
+		})
+		if err != nil {
+			srv.log.Debug(fmt.Sprint("failed removing snapshot ", snapId))
+			isError = true
+		}
+
 	}
+	if isError {
+		return errors.New("failed to remove snapshots")
+	}
+	return nil
 }
 
 func (srv *Service) listSnapshots(ami string) []string {
 	var snapIds []string
 
-	filters := ec2.NewFilter()
-	filters.Add("description", fmt.Sprintf("*%s*", ami))
-	resp, err := srv.ec2.Snapshots(nil, filters)
+	resp, err := srv.ec2.DescribeSnapshots(&ec2.DescribeSnapshotsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name: aws.String("description"),
+				Values: []*string{
+					aws.String(fmt.Sprintf("*%s*", ami)),
+				},
+			},
+		},
+		OwnerIds: []*string{
+			aws.String("self"),
+		},
+	})
 	if err != nil {
 		return snapIds
 	}
@@ -64,15 +91,21 @@ func (srv *Service) listSnapshots(ami string) []string {
 	snaps := resp.Snapshots
 
 	for _, snap := range snaps {
-		snapIds = append(snapIds, snap.Id)
+		snapIds = append(snapIds, *snap.SnapshotId)
 	}
 
 	return snapIds
 }
 
-func (srv *Service) Find(filter FindFilter) []ec2.Image {
-	resp, err := srv.ec2.ImagesByOwners(nil, []string{"self"}, filter.ec2filter())
+func (srv *Service) Find(filter FindFilter) []*ec2.Image {
+	resp, err := srv.ec2.DescribeImages(&ec2.DescribeImagesInput{
+		Filters: filter.ec2filter(),
+		Owners: []*string{
+			aws.String("self"),
+		},
+	})
 	if err != nil {
+		srv.log.Debug(err.Error())
 		return nil
 	}
 
@@ -82,14 +115,18 @@ func (srv *Service) Find(filter FindFilter) []ec2.Image {
 
 type FindFilter struct {
 	CreatedBy string
-	Latest    bool
 }
 
-func (f FindFilter) ec2filter() *ec2.Filter {
-	ec2filter := ec2.NewFilter()
+func (f FindFilter) ec2filter() []*ec2.Filter {
+	var ec2filter []*ec2.Filter
 
 	if f.CreatedBy != "" {
-		ec2filter.Add("tag:Created By", f.CreatedBy)
+		ec2filter = append(ec2filter, &ec2.Filter{
+			Name: aws.String("tag:Created By"),
+			Values: []*string{
+				aws.String(f.CreatedBy),
+			},
+		})
 	}
 
 	return ec2filter

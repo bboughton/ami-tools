@@ -28,6 +28,6 @@ func main() {
 		CreatedBy: usr,
 	}
 	for _, image := range client.Find(filter) {
-		fmt.Println(image.Id)
+		fmt.Println(*image.ImageId)
 	}
 }
