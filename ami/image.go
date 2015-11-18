@@ -9,6 +9,7 @@ import (
 type Image struct {
 	Id        string
 	CreatedAt time.Time
+	CreatedBy string
 }
 
 type Images []Image
@@ -23,9 +24,17 @@ func newImageFromEc2Image(img *ec2.Image) Image {
 		createdAt = time.Now()
 	}
 
+	var createdBy string
+	for _, tag := range img.Tags {
+		if *tag.Key == "Created By" {
+			createdBy = *tag.Value
+		}
+	}
+
 	return Image{
 		Id:        *img.ImageId,
 		CreatedAt: createdAt,
+		CreatedBy: createdBy,
 	}
 }
 

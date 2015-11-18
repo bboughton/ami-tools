@@ -100,7 +100,8 @@ func (srv *Service) listSnapshots(ami string) []string {
 
 func (srv *Service) Find(filter FindFilter) Images {
 	resp, err := srv.ec2.DescribeImages(&ec2.DescribeImagesInput{
-		Filters: filter.ec2filter(),
+		Filters:  filter.ec2filter(),
+		ImageIds: aws.StringSlice(filter.Ids),
 		Owners: []*string{
 			aws.String("self"),
 		},
@@ -127,6 +128,7 @@ func (srv *Service) Find(filter FindFilter) Images {
 type FindFilter struct {
 	CreatedBy string
 	Latest    bool
+	Ids       []string
 }
 
 func (f FindFilter) ec2filter() []*ec2.Filter {
