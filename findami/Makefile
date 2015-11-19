@@ -2,15 +2,21 @@ NAME = findami
 VERSION = $(shell cat VERSION)
 REVISION = $(shell git rev-parse --short HEAD)
 
+GOCMD = go
+
 build:
-	@go build -o build/$(NAME) -ldflags "-X main.Name=$(NAME) -X main.Version=$(VERSION) -X main.Revision=$(REVISION)"
+	@$(GOCMD) build -ldflags "-X main.Name=$(NAME) -X main.Version=$(VERSION) -X main.Revision=$(REVISION)"
 
 clean:
-	@go clean
+	@$(GOCMD) clean
 	@rm -rf build
 
-install: build
-	@cp build/$(NAME) $(GOPATH)/bin/$(NAME)
+install:
+	@$(GOCMD) install
+	@cp share/man/man1/$(NAME).1 $(GOPATH)/share/man/man1/$(NAME).1
 
+uninstall:
+	@$(RM) $(GOPATH)/bin/$(NAME)
+	@$(RM) $(GOPATH)/share/man/man1/$(NAME).1
 
-.PHONY: build clean
+.PHONY: build clean install
