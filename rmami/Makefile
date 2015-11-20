@@ -13,8 +13,10 @@ clean:
 
 install:
 	@$(GOCMD) install $(LDFLAGS)
+	@cp share/man/man1/$(NAME).1 $(GOPATH)/share/man/man1/$(NAME).1
 
 uninstall:
 	@$(RM) $(GOPATH)/bin/$(NAME)
+	@$(RM) $(GOPATH)/share/man/man1/$(NAME)
 
 .PHONY: build clean install uninstall
