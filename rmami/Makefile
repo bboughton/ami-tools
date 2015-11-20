@@ -2,15 +2,19 @@ NAME = rmami
 VERSION = $(shell cat VERSION)
 REVISION = $(shell git rev-parse --short HEAD)
 
+GOCMD=go
+LDFLAGS=-ldflags "-X main.Name=$(NAME) -X main.Version=$(VERSION) -X main.Revision=$(REVISION)"
+
 build:
-	@go build -o build/$(NAME) -ldflags "-X main.Name=$(NAME) -X main.Version=$(VERSION) -X main.Revision=$(REVISION)"
+	@$(GOCMD) build $(LDFLAGS)
 
 clean:
-	@go clean
-	@rm -rf build
+	@$(GOCMD) clean
 
-install: build
-	@cp build/$(NAME) $(GOPATH)/bin/$(NAME)
+install:
+	@$(GOCMD) install $(LDFLAGS)
 
+uninstall:
+	@$(RM) $(GOPATH)/bin/$(NAME)
 
-.PHONY: build clean
+.PHONY: build clean install uninstall
