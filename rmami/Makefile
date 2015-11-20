@@ -17,6 +17,6 @@ install:
 
 uninstall:
 	@$(RM) $(GOPATH)/bin/$(NAME)
-	@$(RM) $(GOPATH)/share/man/man1/$(NAME)
+	@$(RM) $(GOPATH)/share/man/man1/$(NAME).1
 
 .PHONY: build clean install uninstall
