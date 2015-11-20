@@ -101,7 +101,7 @@ func (srv *Service) listSnapshots(ami string) []string {
 func (srv *Service) Find(filter FindFilter) Images {
 	resp, err := srv.ec2.DescribeImages(&ec2.DescribeImagesInput{
 		Filters:  filter.ec2filter(),
-		ImageIds: aws.StringSlice(filter.Ids),
+		ImageIds: filter.imageIds(),
 		Owners: []*string{
 			aws.String("self"),
 		},
@@ -144,4 +144,11 @@ func (f FindFilter) ec2filter() []*ec2.Filter {
 	}
 
 	return ec2filter
+}
+
+func (f FindFilter) imageIds() []*string {
+	if len(f.Ids) == 0 {
+		return nil
+	}
+	return aws.StringSlice(f.Ids)
 }
